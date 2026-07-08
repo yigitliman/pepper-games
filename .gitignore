@@ -1,0 +1,18 @@
+__pycache__/
+.ipynb_checkpoints/
+.virtual_documents/
+*.mp4
+*.csv
+*.pyc
+*.wav
+*.json
+*.log
+*.lock
+
+# large / licensed binaries - users download these themselves (see readme.md)
+sdk/
+choregraphe/
+*.exe
+*.run
+*.zip
+*.tar.gz
