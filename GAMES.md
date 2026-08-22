@@ -120,6 +120,22 @@ $env:PEPPER_SSH_PASSWORD = "..."
 .\start_pepper_admin.ps1            # then open http://127.0.0.1:8080
 ```
 
+The panel listens on loopback only. That is deliberate: its endpoints make
+Pepper speak and move and start processes on the host, so an open port here
+hands the robot to anyone who can route to the machine.
+
+To drive it from a phone or a second laptop, bind wider and the panel will
+demand a token:
+
+```powershell
+python pepper_admin.py --host 0.0.0.0
+# prints http://0.0.0.0:8080/?token=<generated>  - open it exactly as printed
+```
+
+The token arrives in the URL, moves into an `HttpOnly` cookie on first load,
+and every later request is rejected without it. Set `PEPPER_ADMIN_TOKEN`
+beforehand to pin a token of your own instead of getting a fresh one per start.
+
 The panel has three tabs:
 
 - **Control** - connect, speak, volume, posture (wake / stand / sit / rest),

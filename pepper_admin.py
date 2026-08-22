@@ -14,16 +14,25 @@ start_pepper_admin.ps1, then open http://127.0.0.1:8080 in your browser.
     set PEPPER_SSH_PASSWORD=...
     set PYTHONPATH=...\pynaoqi...\lib
     python pepper_admin.py            # --port 8080  --ip 192.168.137.214
+
+The panel can make Pepper speak and move and can start processes on this
+machine, so it listens on loopback only. To reach it from another device pass
+--host 0.0.0.0; the panel then mints a token, prints the URL that carries it,
+and rejects every request without it. Set PEPPER_ADMIN_TOKEN to choose the
+token yourself instead of getting a fresh one on each start.
 """
 
 import os
 import sys
 import json
 import time
+import hmac
+import binascii
 import threading
 import argparse
 import subprocess
 
+from urllib import unquote
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from SocketServer import ThreadingMixIn
 
@@ -36,6 +45,28 @@ from pepper_parrot_game import (find_pepper, show_on_tablet, set_eyes,
 HERE = os.path.dirname(os.path.abspath(__file__))
 SSH_USER = 'nao'
 SSH_PW = os.environ.get(PEPPER_PW_ENV_VAR)
+
+# Access control. This panel makes the robot speak and move and starts local
+# processes, so an open port here is remote control of the robot for anyone who
+# can route to this machine. It therefore binds to loopback unless asked
+# otherwise, and any non-loopback bind demands a token on every request.
+ADMIN_TOKEN_ENV_VAR = 'PEPPER_ADMIN_TOKEN'
+TOKEN_COOKIE = 'pepper_admin_token'
+LOOPBACK = ('127.0.0.1', 'localhost', '::1')
+ACCESS = {'token': None}          # None means loopback-only, no token required
+
+
+def same_secret(given, expected):
+    """Compare in constant time, so a wrong guess leaks no timing signal."""
+    try:
+        return hmac.compare_digest(str(given), str(expected))
+    except AttributeError:        # hmac.compare_digest landed in 2.7.7
+        if len(given) != len(expected):
+            return False
+        diff = 0
+        for a, b in zip(given, expected):
+            diff |= ord(a) ^ ord(b)
+        return diff == 0
 
 LOCK = threading.Lock()
 STATE = {'ip': None, 'session': None}
@@ -347,14 +378,54 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _client_token(self):
+        """Read the token from the header, the cookie or the query string."""
+        auth = self.headers.get('Authorization', '')
+        if auth.startswith('Bearer '):
+            return auth[7:].strip()
+        for part in self.headers.get('Cookie', '').split(';'):
+            name, _, value = part.strip().partition('=')
+            if name == TOKEN_COOKIE:
+                return value
+        if '?' in self.path:
+            for part in self.path.split('?', 1)[1].split('&'):
+                name, _, value = part.partition('=')
+                if name == 'token':
+                    return unquote(value)
+        return ''
+
+    def _authorised(self):
+        expected = ACCESS['token']
+        if not expected:                      # loopback-only, nothing to check
+            return True
+        return same_secret(self._client_token(), expected)
+
+    def _deny(self):
+        self._send(401, 'text/plain',
+                   b'unauthorised - this panel needs the admin token\n')
+
     def do_GET(self):
-        if self.path in ('/', '/index.html'):
+        if not self._authorised():
+            return self._deny()
+        if self.path.split('?')[0] in ('/', '/index.html'):
+            # Move a token handed over in the URL into a cookie, so it stops
+            # sitting in the address bar, the history and later Referer headers.
+            if ACCESS['token'] and 'token=' in self.path:
+                self.send_response(302)
+                self.send_header('Set-Cookie', '%s=%s; Path=/; HttpOnly'
+                                 % (TOKEN_COOKIE, ACCESS['token']))
+                self.send_header('Location', '/')
+                self.send_header('Content-Length', '0')
+                self.end_headers()
+                return
             return self._send(200, 'text/html; charset=utf-8', PAGE.encode('utf-8'))
         if self.path.startswith('/api/'):
             return self._api('GET')
         self._send(404, 'text/plain', b'not found')
 
     def do_POST(self):
+        if not self._authorised():
+            return self._deny()
         if self.path.startswith('/api/'):
             return self._api('POST')
         self._send(404, 'text/plain', b'not found')
@@ -639,6 +710,10 @@ def main():
     parser.add_argument('--port', type=int, default=8080)
     parser.add_argument('--ip', type=str, default=None,
                         help='Pepper IP (auto-find if omitted)')
+    parser.add_argument('--host', type=str, default='127.0.0.1',
+                        help='address to bind. Loopback by default; any other '
+                             'value exposes the panel to the network and then '
+                             'requires a token on every request')
     args = parser.parse_args()
 
     if args.ip:
@@ -653,8 +728,22 @@ def main():
     global PAGE
     PAGE = PAGE.replace(u'__WIKI__', WIKI_HTML)
 
-    srv = ThreadingServer(('0.0.0.0', args.port), Handler)
-    print('Pepper Admin running at http://127.0.0.1:%d  (Ctrl+C to stop)' % args.port)
+    if args.host not in LOOPBACK:
+        ACCESS['token'] = (os.environ.get(ADMIN_TOKEN_ENV_VAR)
+                           or binascii.hexlify(os.urandom(16)))
+
+    srv = ThreadingServer((args.host, args.port), Handler)
+    if ACCESS['token'] is None:
+        print('Pepper Admin running at http://127.0.0.1:%d  (Ctrl+C to stop)'
+              % args.port)
+        print('Listening on loopback only. Pass --host 0.0.0.0 to reach it '
+              'from another device, which will then require a token.')
+    else:
+        print('Pepper Admin running at http://%s:%d/?token=%s  (Ctrl+C to stop)'
+              % (args.host, args.port, ACCESS['token']))
+        print('This panel is reachable from the network, so every request must '
+              'carry that token. Open the URL exactly as printed; set '
+              '%s to pin a token of your own.' % ADMIN_TOKEN_ENV_VAR)
     try:
         srv.serve_forever()
     except KeyboardInterrupt:
