@@ -3,7 +3,7 @@
 Setup and interaction basics for controlling a SoftBank Robotics Pepper robot
 from Python.
 
-> **Looking for the voice games?** See **[`GAMES.md`](GAMES.md)** for the
+> **Looking for the voice games?** See the main **[`README.md`](README.md)** for the
 > Parrot, "Ask Pepper" Q&A, and Guess What games, the tablet touch menu
 > (kiosk), and the web admin panel (`pepper_admin.py`). This file only covers
 > environment setup and basic Pepper interaction.
@@ -103,7 +103,7 @@ The pattern used by all the games in this repo: record audio on Pepper ->
 pull the file over SFTP -> transcribe with a speech-to-text API -> send the
 transcript to a chat API -> speak the reply back with Pepper's TTS. Done with
 plain `requests` calls since Python 2.7 doesn't play well with most modern API
-client libraries. See [`GAMES.md`](GAMES.md) and `pepper_echo.py` for the
+client libraries. See [`README.md`](README.md) and `pepper_echo.py` for the
 actual implementation.
 
 Pepper's built-in TTS voice is robotic and has no real intonation - swapping

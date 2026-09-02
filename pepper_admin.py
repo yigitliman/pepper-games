@@ -10,6 +10,7 @@ Run it inside the 'pepper' conda env with pynaoqi on PYTHONPATH, e.g. via
 start_pepper_admin.ps1, then open http://127.0.0.1:8080 in your browser.
 
     conda activate pepper
+    set HCTL_BASE_URL=https://your-open-webui-server
     set HCTL_TOKEN=eyJhbGci...
     set PEPPER_SSH_PASSWORD=...
     set PYTHONPATH=...\pynaoqi...\lib
@@ -38,7 +39,8 @@ from SocketServer import ThreadingMixIn
 
 import qi
 
-from pepper_echo import LANGUAGE_DICT, TOKEN_ENV_VAR, PEPPER_PW_ENV_VAR
+from pepper_echo import (LANGUAGE_DICT, STT_BASE_URL, BASE_URL_ENV_VAR,
+                         TOKEN_ENV_VAR, PEPPER_PW_ENV_VAR)
 from pepper_parrot_game import (find_pepper, show_on_tablet, set_eyes,
                                 NAOQI_PORT, HOTSPOT_SUBNET)
 
@@ -643,7 +645,7 @@ WIKI_HTML = u"""
 <tr><td>Robot IP (Mobile Hotspot)</td><td><code>192.168.137.214</code> &nbsp; subnet <code>192.168.137.x</code></td></tr>
 <tr><td>naoqi port</td><td><code>9559</code></td></tr>
 <tr><td>SSH login</td><td><code>nao</code> / env var <code>PEPPER_SSH_PASSWORD</code> (port 22, ask a lab member for the value)</td></tr>
-<tr><td>STT / chat server</td><td><code>https://your-open-webui-server</code> (Open WebUI at TUM)</td></tr>
+<tr><td>STT / chat server</td><td>env var <code>HCTL_BASE_URL</code> (an Open WebUI instance). Ask a lab member for the address.</td></tr>
 <tr><td>Token</td><td>env var <code>HCTL_TOKEN</code> (Bearer). Set before starting this panel.</td></tr>
 <tr><td>Tablet web root</td><td><code>/home/nao/.local/share/PackageManager/apps/robot-page/html/</code> &rarr; served at <code>http://198.18.0.1/</code></td></tr>
 <tr><td>Python env</td><td>conda <code>pepper</code> (Python 2.7, 32-bit) + pynaoqi on <code>PYTHONPATH</code></td></tr>
@@ -651,6 +653,7 @@ WIKI_HTML = u"""
 
 <h2>How to run the games</h2>
 <pre>conda activate pepper
+set HCTL_BASE_URL=https://your-open-webui-server
 set HCTL_TOKEN=eyJhbGci...
 set PYTHONPATH=...\\sdk\\pynaoqi-win32\\...\\lib
 
@@ -718,6 +721,9 @@ def main():
 
     if args.ip:
         STATE['ip'] = args.ip
+    if not STT_BASE_URL:
+        print('WARNING: %s is not set -- the games will not be able to '
+              'reach the AI server.' % BASE_URL_ENV_VAR)
     if not os.environ.get(TOKEN_ENV_VAR):
         print('WARNING: %s is not set -- the Q&A game will not be able to '
               'reach the AI server.' % TOKEN_ENV_VAR)

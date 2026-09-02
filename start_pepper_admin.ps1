@@ -1,6 +1,7 @@
 # start_pepper_admin.ps1 -- launch the Pepper web admin panel.
 #
 # Usage:
+#   $env:HCTL_BASE_URL = "https://your-open-webui-server"
 #   $env:HCTL_TOKEN = "eyJhbGci..."      # needed only for the Q&A game
 #   .\start_pepper_admin.ps1             # then open http://127.0.0.1:8080
 #
@@ -31,6 +32,9 @@ if (-not $lib) { throw "Could not find pynaoqi under $root\sdk. Is the SDK unpac
 $env:PYTHONPATH = $lib
 $env:PATH = "$lib;$env:PATH"
 
+if (-not $env:HCTL_BASE_URL) {
+    Write-Host "NOTE: HCTL_BASE_URL is not set - the games will not reach the AI server." -ForegroundColor Yellow
+}
 if (-not $env:HCTL_TOKEN) {
     Write-Host "NOTE: HCTL_TOKEN is not set - the Q&A game will not reach the AI server." -ForegroundColor Yellow
 }

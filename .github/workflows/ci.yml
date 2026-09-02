@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  syntax:
+    name: Python 2.7 syntax check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The games target Pepper's naoqi SDK, which is licensed, Python 2.7 only
+      # and not redistributable, so it cannot be installed here. This compiles
+      # every module under Python 2.7 to catch syntax errors; it does not
+      # import naoqi and does not exercise the robot.
+      - name: Compile all modules under Python 2.7
+        run: |
+          docker run --rm -v "$PWD":/src -w /src python:2.7-slim \
+            python -m compileall -q .
