@@ -9,12 +9,13 @@ Let Pepper listen and repeat what it heard:
     4. Pepper says the same text back (ALTextToSpeech)
 
 Run inside the Python 2.7 (32-bit) 'pepper' conda environment.
-Speech-to-text is done by the HCTL server (Open WebUI at TUM); the access
-token is read from the environment variable HCTL_TOKEN (it is NOT hard-coded
-in this file).
+Speech-to-text is done by an Open WebUI server. Both its address and the
+access token are read from the environment (HCTL_BASE_URL and HCTL_TOKEN);
+neither is hard-coded in this file.
 
 Example:
     conda activate pepper
+    set HCTL_BASE_URL=https://your-open-webui-server
     set HCTL_TOKEN=eyJhbGci...
     python pepper_echo.py -ip 192.168.137.190 -d 6
 """
@@ -30,9 +31,11 @@ import qi
 import paramiko
 import requests
 
-# HCTL speech-to-text server (Open WebUI at TUM).
+# Speech-to-text server (an Open WebUI instance). Its address is read from
+# the environment so that no server hostname is hard-coded in this repo.
 # Endpoint accepts a multipart 'file' upload and returns {"text": ...}.
-STT_BASE_URL = 'https://hctlsrvb.edu.sot.tum.de'
+BASE_URL_ENV_VAR = 'HCTL_BASE_URL'
+STT_BASE_URL = os.environ.get(BASE_URL_ENV_VAR, '').rstrip('/')
 STT_API_URL = STT_BASE_URL + '/api/v1/audio/transcriptions'
 # environment variable that holds the Bearer token for the server
 TOKEN_ENV_VAR = 'HCTL_TOKEN'
@@ -253,6 +256,11 @@ def main():
                         help='keep listening and repeating until Ctrl+C')
     args = parser.parse_args()
 
+    if not STT_BASE_URL:
+        print('ERROR: set the %s environment variable first.' % BASE_URL_ENV_VAR)
+        print('  Windows:  set %s=https://your-open-webui-server'
+              % BASE_URL_ENV_VAR)
+        sys.exit(1)
     token = os.environ.get(TOKEN_ENV_VAR)
     if not token:
         print('ERROR: set the %s environment variable first.' % TOKEN_ENV_VAR)

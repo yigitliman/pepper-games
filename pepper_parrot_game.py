@@ -28,7 +28,8 @@ import qi
 
 # reuse the proven building blocks from the echo pipeline
 from pepper_echo import (record_audio, download_audio, transcribe,
-                         TOKEN_ENV_VAR, PEPPER_PW_ENV_VAR, LANGUAGE_DICT)
+                         STT_BASE_URL, BASE_URL_ENV_VAR, TOKEN_ENV_VAR,
+                         PEPPER_PW_ENV_VAR, LANGUAGE_DICT)
 
 HOTSPOT_SUBNET = '192.168.137'   # Windows Mobile Hotspot range
 NAOQI_PORT = 9559
@@ -251,6 +252,11 @@ def main():
                         default='./recording.wav')
     args = parser.parse_args()
 
+    if not STT_BASE_URL:
+        print('ERROR: set the %s environment variable first.' % BASE_URL_ENV_VAR)
+        print('  Windows:  set %s=https://your-open-webui-server'
+              % BASE_URL_ENV_VAR)
+        sys.exit(1)
     token = os.environ.get(TOKEN_ENV_VAR)
     if not token:
         print('ERROR: set the %s environment variable first.' % TOKEN_ENV_VAR)

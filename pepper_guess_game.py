@@ -31,7 +31,8 @@ import qi
 import requests
 
 from pepper_echo import (record_audio, download_audio, transcribe,
-                         TOKEN_ENV_VAR, PEPPER_PW_ENV_VAR)
+                         STT_BASE_URL, BASE_URL_ENV_VAR, TOKEN_ENV_VAR,
+                         PEPPER_PW_ENV_VAR)
 from pepper_parrot_game import (find_pepper, show_on_tablet, set_eyes, _esc,
                                 read_mem_int, STOP_KEY, EXIT_KEY,
                                 NAOQI_PORT, HOTSPOT_SUBNET)
@@ -268,6 +269,11 @@ def main():
                              '(so EXIT does not spawn a second kiosk process)')
     args = parser.parse_args()
 
+    if not STT_BASE_URL:
+        print('ERROR: set the %s environment variable first.' % BASE_URL_ENV_VAR)
+        print('  Windows:  set %s=https://your-open-webui-server'
+              % BASE_URL_ENV_VAR)
+        sys.exit(1)
     token = os.environ.get(TOKEN_ENV_VAR)
     if not token:
         print('ERROR: set the %s environment variable first.' % TOKEN_ENV_VAR)

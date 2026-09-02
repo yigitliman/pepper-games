@@ -9,7 +9,7 @@ __pycache__/
 *.log
 *.lock
 
-# large / licensed binaries - users download these themselves (see readme.md)
+# large / licensed binaries - users download these themselves (see SETUP.md)
 sdk/
 choregraphe/
 *.exe

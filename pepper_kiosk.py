@@ -24,7 +24,8 @@ import subprocess
 
 import qi
 
-from pepper_echo import TOKEN_ENV_VAR, PEPPER_PW_ENV_VAR
+from pepper_echo import (STT_BASE_URL, BASE_URL_ENV_VAR, TOKEN_ENV_VAR,
+                         PEPPER_PW_ENV_VAR)
 from pepper_parrot_game import find_pepper, NAOQI_PORT, HOTSPOT_SUBNET
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -132,6 +133,9 @@ def main():
                         help='category for the Guess game')
     args = parser.parse_args()
 
+    if not STT_BASE_URL:
+        print('WARNING: %s not set -- the games will not reach the AI server.'
+              % BASE_URL_ENV_VAR)
     if not os.environ.get(TOKEN_ENV_VAR):
         print('WARNING: %s not set -- the games will not reach the AI server.'
               % TOKEN_ENV_VAR)

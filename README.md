@@ -1,12 +1,14 @@
 # Pepper Voice Games & Admin Panel
 
+[![CI](https://github.com/yigitliman/pepper-games/actions/workflows/ci.yml/badge.svg)](https://github.com/yigitliman/pepper-games/actions/workflows/ci.yml)
+
 Interactive voice games and a web admin panel for a **SoftBank Robotics Pepper**
 robot, driven from a Windows PC over the naoqi API.
 
 Speech is transcribed and answered by an [Open WebUI](https://openwebui.com/)
 server (Whisper for speech-to-text, `gpt-oss-120b` for chat). Everything runs in
 the Python 2.7 (32-bit) `pepper` conda environment with the pynaoqi SDK - see the
-main [`readme.md`](readme.md) for the environment, WLAN and SDK setup.
+main [`SETUP.md`](SETUP.md) for the environment, WLAN and SDK setup.
 
 ---
 
@@ -46,9 +48,12 @@ will run:
    pip install paramiko requests
    ```
 
-4. **HCTL_TOKEN** (Open WebUI bearer token). ALL games need it (speech-to-text),
-   not just Q&A. Save it once as a user variable so the launcher picks it up:
+4. **HCTL_BASE_URL and HCTL_TOKEN** (the Open WebUI server address and its
+   bearer token). ALL games need both (speech-to-text), not just Q&A. Neither
+   is stored in this repo, so ask a lab member for the values and save them
+   once as user variables so the launcher picks them up:
    ```powershell
+   setx HCTL_BASE_URL "https://your-open-webui-server"
    setx HCTL_TOKEN "eyJhbGci..."
    ```
    Tokens expire, so refresh it from Open WebUI when it stops working.
@@ -115,6 +120,7 @@ the menu comes back. The tablet talks to the robot through `qimessaging.js`
 ## Running the admin panel
 
 ```powershell
+$env:HCTL_BASE_URL = "https://your-open-webui-server"
 $env:HCTL_TOKEN = "eyJhbGci..."
 $env:PEPPER_SSH_PASSWORD = "..."
 .\start_pepper_admin.ps1            # then open http://127.0.0.1:8080
@@ -183,13 +189,13 @@ separate `reasoning` field, but the game also strips any leaked
 | Robot IP (Mobile Hotspot) | `192.168.137.214`, subnet `192.168.137.x` |
 | naoqi port | `9559` |
 | SSH login | user `nao`, password in env var `PEPPER_SSH_PASSWORD` (port 22) |
-| STT / chat server | `https://hctlsrvb.edu.sot.tum.de` |
+| STT / chat server | env var `HCTL_BASE_URL` (an Open WebUI instance; ask a lab member) |
 | Tablet web root | `/home/nao/.local/share/PackageManager/apps/robot-page/html/` → `http://198.18.0.1/` |
 | Python | conda `pepper`, Python 2.7 32-bit + pynaoqi on `PYTHONPATH` |
 
-> **Security note:** the SSH/hotspot password and the HCTL token are read from
-> the `PEPPER_SSH_PASSWORD` and `HCTL_TOKEN` environment variables -- never
-> hardcode either in code or docs, since this repo may become public. Ask a
-> lab member for the actual values.
+> **Security note:** the server address, its token and the SSH/hotspot password
+> are read from the `HCTL_BASE_URL`, `HCTL_TOKEN` and `PEPPER_SSH_PASSWORD`
+> environment variables -- never hardcode any of them in code or docs, since
+> this repo is public. Ask a lab member for the actual values.
 
 ---
